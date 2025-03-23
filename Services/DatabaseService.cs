@@ -1,6 +1,9 @@
 using Discord.Commands;
 using Microsoft.EntityFrameworkCore;
+using QuestQuokka.Models;
 using System.Threading.Tasks;
+
+namespace QuestQuokka.Services;
 
 public class DatabaseService : ModuleBase<SocketCommandContext>
 {

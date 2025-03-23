@@ -1,8 +1,11 @@
 using Discord;
 using Discord.Commands;
 using Microsoft.EntityFrameworkCore;
+using QuestQuokka.Models;
 using System.Linq;
 using System.Threading.Tasks;
+
+namespace QuestQuokka.Services;
 
 public class LeaderboardService : ModuleBase<SocketCommandContext>
 {
