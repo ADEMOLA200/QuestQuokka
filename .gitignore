@@ -1,0 +1,24 @@
+# Ignore build output
+bin/
+obj/
+.vs/
+*.exe
+*.dll
+*.pdb
+
+# Ignore user-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Ignore dependency directories
+packages/
+TestResults/
+node_modules/
+
+# Ignore IDE settings
+.vscode/
+*.csproj.user
+.DS_Store
+appsettings.json
