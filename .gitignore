@@ -22,3 +22,6 @@ node_modules/
 *.csproj.user
 .DS_Store
 appsettings.json
+url.txt
+publish.zip
+publish
