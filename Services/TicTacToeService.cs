@@ -91,7 +91,6 @@ namespace QuestQuokka.Services
                     return true;
                 }
 
-                // Switch turn and update display based on the new _currentPlayer
                 _currentPlayer = _currentPlayer == _playerX ? _playerO : _playerX;
                 await UpdateBoard(context, $"**{_currentPlayer.Mention}'s turn** ({(_currentPlayer == _playerX ? "X" : "O")})");
                 return false;
