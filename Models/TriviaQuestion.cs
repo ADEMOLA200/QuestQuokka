@@ -2,13 +2,13 @@ namespace QuestQuokka.Models
 {
     public class TriviaQuestion
     {
+        [JsonProperty("question")]
         public string Question { get; set; }
-        public string CorrectAnswer { get; set; }
-        public List<string> IncorrectAnswers { get; set; }
 
-        public TriviaQuestion()
-        {
-            IncorrectAnswers = new List<string>();
-        }
+        [JsonProperty("correct_answer")]
+        public string CorrectAnswer { get; set; }
+
+        [JsonProperty("incorrect_answers")]
+        public List<string> IncorrectAnswers { get; set; }
     }
 }
