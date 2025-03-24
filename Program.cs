@@ -1,69 +1,106 @@
 ﻿using Discord;
-using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using QuestQuokka.Models;
+using QuestQuokka.Services;
 using System;
 using System.IO;
 using System.Threading.Tasks;
 
 public class Program
 {
-    private DiscordSocketClient _client;
-    private CommandService _commands;
-    private IConfiguration _config;
+    private DiscordSocketClient _client = null!;
+    private InteractionService _interactionService = null!;
+    private IConfiguration _config = null!;
+    private IServiceProvider _services = null!;
 
     public static Task Main(string[] args) => new Program().MainAsync();
 
     public async Task MainAsync()
     {
-        _client = new DiscordSocketClient();
-        _commands = new CommandService();
+        _client = new DiscordSocketClient(new DiscordSocketConfig 
+        {
+            GatewayIntents = GatewayIntents.Guilds 
+                           | GatewayIntents.GuildMessages 
+                           | GatewayIntents.MessageContent 
+                           | GatewayIntents.GuildMembers,
+            LogLevel = LogSeverity.Debug
+        });
+        
+        _interactionService = new InteractionService(_client);
+        
+        _client.Log += LogAsync;
+        _interactionService.Log += LogAsync;
+
         _config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json")
             .Build();
 
-        // Register services
-        var services = new ServiceCollection()
+        _services = new ServiceCollection()
             .AddSingleton(_client)
-            .AddSingleton(_commands)
+            .AddSingleton(_interactionService)
             .AddSingleton(_config)
             .AddDbContext<DatabaseContext>(options => 
                 options.UseSqlite("Data Source=questquokka.db"))
+            .AddSingleton<DatabaseService>()
+            .AddSingleton<TriviaService>()
+            .AddSingleton<GameManagementService>()
+            .AddSingleton<TicTacToeService>()
+            .AddSingleton<LeaderboardService>()
             .BuildServiceProvider();
 
-        // Initialize database
-        using (var context = services.GetService<DatabaseContext>())
-        {
-            await context.Database.MigrateAsync();
-        }
+        using var dbContext = _services.GetRequiredService<DatabaseContext>();
+        await dbContext.Database.MigrateAsync();
 
-        await InstallCommandsAsync(services);
+        _client.Ready += ClientReady;
+        _client.InteractionCreated += HandleInteraction;
+
         await _client.LoginAsync(TokenType.Bot, _config["DiscordBot:Token"]);
         await _client.StartAsync();
         await Task.Delay(-1);
     }
 
-    private async Task InstallCommandsAsync(IServiceProvider services)
+    private async Task ClientReady()
     {
-        _client.MessageReceived += HandleCommandAsync;
-        await _commands.AddModuleAsync<TriviaService>(services);
-        await _commands.AddModuleAsync<TicTacToeService>(services);
-        await _commands.AddModuleAsync<LeaderboardService>(services);
+        Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Bot connected as {_client.CurrentUser}");
+
+        // Clear existing commands
+        await _interactionService.RegisterCommandsGloballyAsync(true); // Set `true` to delete existing commands
+        Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Cleared existing global commands");
+
+        // Re-register commands
+        await _interactionService.AddModulesAsync(
+            assembly: System.Reflection.Assembly.GetEntryAssembly(),
+            services: _services
+        );
+        await _interactionService.RegisterCommandsGloballyAsync();
+        Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Commands registered globally");
     }
 
-    private async Task HandleCommandAsync(SocketMessage messageParam)
+    private async Task HandleInteraction(SocketInteraction interaction)
     {
-        var message = messageParam as SocketUserMessage;
-        if (message == null) return;
+        try
+        {
+            var context = new SocketInteractionContext(_client, interaction);
+            await _interactionService.ExecuteCommandAsync(context, _services);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Error] {ex}");
+            if (interaction.Type == InteractionType.ApplicationCommand)
+                await interaction.RespondAsync("❌ An error occurred processing that command", ephemeral: true);
+        }
+    }
 
-        int argPos = 0;
-        var prefix = _config["DiscordBot:Prefix"];
-        if (!message.HasStringPrefix(prefix, ref argPos)) return;
-
-        var context = new SocketCommandContext(_client, message);
-        await _commands.ExecuteAsync(context, argPos, services);
+    private Task LogAsync(LogMessage log)
+    {
+        Console.WriteLine($"{DateTime.Now:HH:mm:ss} [{log.Severity}] {log.Source}: {log.Message}");
+        if (log.Exception != null)
+            Console.WriteLine(log.Exception);
+        return Task.CompletedTask;
     }
 }

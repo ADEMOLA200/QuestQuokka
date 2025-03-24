@@ -5,6 +5,16 @@ It currently features **Tic-Tac-Toe** with real-time button interactions and wil
 
 ---
 
+## **🎮 Games Currently Added**
+
+- **Tic-Tac-Toe (Button-Based)**  
+  Engage in interactive, real-time Tic-Tac-Toe games using Discord buttons. Players take turns, and the bot automatically detects wins, draws, and prevents out-of-turn moves.
+
+- **Trivia**  
+  Answer dynamically fetched trivia questions from OpenTDB. Options are shuffled and embedded in buttons with built-in answer validation, letting you know instantly if your answer is correct or incorrect.
+ 
+---
+
 ## **📌 Features**  
 
 ✔️ **Tic-Tac-Toe (Button-Based)** – Play an interactive game using Discord buttons!  
@@ -38,16 +48,27 @@ cd QuestQuokka
 Run the following command to install **Discord.Net**:  
 ```sh
 dotnet add package Discord.Net
+dotnet add package Discord.Net.Commands
+dotnet add package Discord.Net.WebSocket
+dotnet add package Discord.Net.Interactions
+dotnet add package Microsoft.EntityFrameworkCore
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite
+dotnet add package Microsoft.Extensions.DependencyInjection
+dotnet add package Newtonsoft.Json
+dotnet add package Microsoft.Extensions.Configuration.Json
 ```
 
 ---
 
 ### **4️⃣ Configure the Bot Token**  
-Create a new file **`botconfig.json`** in the root directory and paste:  
+Create a new file **`appsettings.json`** in the root directory and paste:  
 ```json
 {
-  "Token": "YOUR_DISCORD_BOT_TOKEN",
-  "Prefix": "!"
+  "DiscordBot": {
+    "Token": "YOUR_DISCORD_BOT_TOKEN",
+    "Prefix": "!",
+    "DailyReward": 100
+  }
 }
 ```
 🔹 Replace `"YOUR_DISCORD_BOT_TOKEN"` with your actual **Discord bot token**.  
