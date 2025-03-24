@@ -68,11 +68,9 @@ public class Program
     {
         Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Bot connected as {_client.CurrentUser}");
 
-        // Clear existing commands
-        await _interactionService.RegisterCommandsGloballyAsync(true); // Set `true` to delete existing commands
+        await _interactionService.RegisterCommandsGloballyAsync(true);
         Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Cleared existing global commands");
 
-        // Re-register commands
         await _interactionService.AddModulesAsync(
             assembly: System.Reflection.Assembly.GetEntryAssembly(),
             services: _services
