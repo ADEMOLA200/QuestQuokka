@@ -1,6 +1,8 @@
 ### **🌜 QuestQuokka - Discord Fun & Games Bot**  
 
-![QQ_02](https://github.com/user-attachments/assets/70a3a880-8005-4422-95de-26e87674671c)
+<p align="center">
+    <img src="https://github.com/user-attachments/assets/70a3a880-8005-4422-95de-26e87674671c" width="25%">
+</p>
 
 🚀 **QuestQuokka** is a **feature-rich Discord bot** built in **C# with Discord.Net** that brings interactive games and fun to your server! 🎮  
 It currently features **Tic-Tac-Toe** and **Trivia** with real-time button interactions and will be expanded with more multiplayer games.  
