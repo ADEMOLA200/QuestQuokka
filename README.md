@@ -1,14 +1,16 @@
-### **📜 QuestQuokka - Discord Fun & Games Bot**  
+### **🌜 QuestQuokka - Discord Fun & Games Bot**  
+
+![QQ_02](https://github.com/user-attachments/assets/70a3a880-8005-4422-95de-26e87674671c)
 
 🚀 **QuestQuokka** is a **feature-rich Discord bot** built in **C# with Discord.Net** that brings interactive games and fun to your server! 🎮  
-It currently features **Tic-Tac-Toe** with real-time button interactions and will be expanded with more multiplayer games.  
+It currently features **Tic-Tac-Toe** and **Trivia** with real-time button interactions and will be expanded with more multiplayer games.  
 
 ---
 
 ## **🎮 Games Currently Added**
 
 - **Tic-Tac-Toe (Button-Based)**  
-  Engage in interactive, real-time Tic-Tac-Toe games using Discord buttons. Players take turns, and the bot automatically detects wins, draws, and prevents out-of-turn moves.
+  Engage in interactive, real-time Tic-Tac-Toe games with memebers of the guild using Discord buttons. Players take turns, and the bot automatically detects wins, draws, and prevents out-of-turn moves.
 
 - **Trivia**  
   Answer dynamically fetched trivia questions from OpenTDB. Options are shuffled and embedded in buttons with built-in answer validation, letting you know instantly if your answer is correct or incorrect.
@@ -28,7 +30,7 @@ It currently features **Tic-Tac-Toe** with real-time button interactions and wil
 
 ## **🛠️ Installation & Setup**  
 
-### **1️⃣ Prerequisites**  
+### **1⃣ Prerequisites**  
 Before running the bot, ensure you have:  
 - ✅ **.NET 6+** installed ([Download .NET](https://dotnet.microsoft.com/en-us/download))  
 - ✅ A **Discord Bot Token** ([Create one here](https://discord.com/developers/applications))  
@@ -36,7 +38,7 @@ Before running the bot, ensure you have:
 
 ---
 
-### **2️⃣ Clone the Repository**  
+### **2⃣ Clone the Repository**  
 ```sh
 git clone https://github.com/ADEMOLA200/QuestQuokka.git
 cd QuestQuokka
@@ -44,7 +46,7 @@ cd QuestQuokka
 
 ---
 
-### **3️⃣ Install Dependencies**  
+### **3⃣ Install Dependencies**  
 Run the following command to install **Discord.Net**:  
 ```sh
 dotnet add package Discord.Net
@@ -60,7 +62,7 @@ dotnet add package Microsoft.Extensions.Configuration.Json
 
 ---
 
-### **4️⃣ Configure the Bot Token**  
+### **4⃣ Configure the Bot Token**  
 Create a new file **`appsettings.json`** in the root directory and paste:  
 ```json
 {
@@ -75,7 +77,7 @@ Create a new file **`appsettings.json`** in the root directory and paste:
 
 ---
 
-### **5️⃣ Run the Bot**  
+### **5⃣ Run the Bot**  
 Start the bot using:  
 ```sh
 dotnet run
@@ -118,7 +120,7 @@ We welcome contributions! Follow these steps:
 
 ---
 
-## **📜 License**  
+## **🌜 License**  
 
 📄 This project is **open-source** under the **MIT License**.  
 
@@ -127,9 +129,9 @@ We welcome contributions! Follow these steps:
 ## **📞 Contact & Support**  
 
 👨‍💻 **Created by:** *ADEMOLA200*  
-📧 Email: odukoyaabdullahi01@gmail.com
+📧 Email: odukoyaabdullahi01@gmail.com  
 🔗 GitHub: [ADEMOLA200](https://github.com/ADEMOLA200)  
 
 ---
 
-🎮 **QuestQuokka – Bringing fun to your Discord server!** 🦘🚀  
+🎮 **QuestQuokka – Bringing fun to your Discord server!** 🦘🚀

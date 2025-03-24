@@ -24,3 +24,7 @@ node_modules/
 appsettings.json
 url.txt
 publish.zip
+images
+questquokka.db
+questquokka.db-shm
+questquokka.db-wal
