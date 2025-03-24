@@ -43,9 +43,11 @@ jobs:
           name: publish
           path: publish/
 
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Login to Railway
+        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+
       - name: Deploy to Railway
-        uses: railwayapp/action@v1
-        with:
-          service: your-railway-service-name
-          token: ${{ secrets.RAILWAY_TOKEN }}
-          environment: production
+        run: railway up --service your-railway-service-name --environment production --detach
