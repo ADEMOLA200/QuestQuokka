@@ -79,10 +79,8 @@ namespace QuestQuokka.Services
             }
         }
 
-        // Updated: Now accepts an int amount parameter.
         public async Task GiveRewardAsync(SocketUser member, int amount, SocketInteractionContext context)
         {
-            // In a real scenario, update the coin balance in your database here.
             await context.Interaction.RespondAsync(
                 $"{member.Mention} has been given a reward of {amount} coins!",
                 ephemeral: false);
@@ -90,7 +88,6 @@ namespace QuestQuokka.Services
 
         public async Task DeductCoinsAsync(SocketUser member, int amount, SocketInteractionContext context)
         {
-            // In a real scenario, update the coin balance in your database here.
             await context.Interaction.RespondAsync(
                 $"{member.Mention} has had {amount} coins deducted!",
                 ephemeral: false);
