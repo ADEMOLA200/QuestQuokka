@@ -14,8 +14,9 @@
     <PackageReference Include="Discord.Net.WebSocket" Version="3.17.2" />
 
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.16" />
-
+    
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
 
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
