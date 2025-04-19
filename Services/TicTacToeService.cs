@@ -55,7 +55,6 @@ namespace QuestQuokka.Services
                 return;
             }
 
-            // Use the GameManagementService to retrieve the active game.
             if (!_gameManager.TryGetGame(Context.Channel.Id, out var game))
             {
                 await FollowupAsync("❌ No active game in this channel!", ephemeral: true);
@@ -64,7 +63,6 @@ namespace QuestQuokka.Services
 
             try
             {
-                // Use the null-forgiving operator since we've ensured game is not null.
                 var result = await game!.MakeMove(Context, index);
                 if (result)
                 {
@@ -125,7 +123,6 @@ namespace QuestQuokka.Services
                     return false;
                 }
 
-                // Apply the move.
                 _board[index] = _currentPlayer == _playerX ? "❌" : "⭕";
                 var winner = CheckWinner();
 

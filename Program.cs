@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using QuestQuokka.Models;
 using QuestQuokka.Services;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace QuestQuokka
@@ -17,6 +18,7 @@ namespace QuestQuokka
         private readonly InteractionService _interactionService;
         private readonly IConfiguration _config;
         private readonly IServiceProvider _services;
+        private Timer _statusTimer;
 
         public static Task Main(string[] args) => new Program().MainAsync();
 
@@ -69,6 +71,61 @@ namespace QuestQuokka
             {
                 Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Fatal] {ex}");
             }
+            finally
+            {
+                _statusTimer?.Dispose();
+            }
+        }
+
+        private async Task RotateStatusAsync()
+        {
+            try
+            {
+                var statuses = new[]
+                {
+                    new Game("🎮 /tictactoe", ActivityType.Playing),
+                    new Game("❓ /trivia", ActivityType.Playing),
+                    new Game("🏆 /leaderboard", ActivityType.Watching),
+                    new Game("💰 /daily", ActivityType.Playing),
+                    new Game("@QuestQuokka help", ActivityType.Listening)
+                };
+
+                var randomStatus = statuses[new Random().Next(statuses.Length)];
+                await _client.SetActivityAsync(randomStatus);
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Status] Changed to: {randomStatus.Name}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Status Error] {ex}");
+            }
+        }
+
+        private async Task ClientReady()
+        {
+            try
+            {
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Bot connected as {_client.CurrentUser}");
+
+                // status rotation (changes every 1 minute)
+                _statusTimer = new Timer(async _ => 
+                {
+                    await RotateStatusAsync();
+                }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+
+                await _interactionService.RegisterCommandsGloballyAsync(true);
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Cleared existing global commands");
+
+                await _interactionService.AddModulesAsync(
+                    assembly: System.Reflection.Assembly.GetEntryAssembly(),
+                    services: _services
+                );
+                await _interactionService.RegisterCommandsGloballyAsync();
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Commands registered globally");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Error] ClientReady: {ex}");
+            }
         }
 
         private IConfiguration BuildConfiguration()
@@ -94,28 +151,6 @@ namespace QuestQuokka
                 .AddSingleton<TicTacToeService>()
                 .AddSingleton<LeaderboardService>()
                 .BuildServiceProvider();
-        }
-
-        private async Task ClientReady()
-        {
-            try
-            {
-                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Bot connected as {_client.CurrentUser}");
-
-                await _interactionService.RegisterCommandsGloballyAsync(true);
-                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Cleared existing global commands");
-
-                await _interactionService.AddModulesAsync(
-                    assembly: System.Reflection.Assembly.GetEntryAssembly(),
-                    services: _services
-                );
-                await _interactionService.RegisterCommandsGloballyAsync();
-                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Commands registered globally");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Error] ClientReady: {ex}");
-            }
         }
 
         private async Task HandleInteraction(SocketInteraction interaction)
