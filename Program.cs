@@ -19,7 +19,7 @@ namespace QuestQuokka
         private readonly InteractionService _interactionService;
         private readonly IConfiguration _config;
         private readonly IServiceProvider _services;
-        private Timer _statusTimer;
+        private Timer? _statusTimer;
 
         public static Task Main(string[] args) => new Program().MainAsync();
 
