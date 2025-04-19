@@ -24,15 +24,15 @@ namespace QuestQuokka
 
         public Program()
         {
-            _client = new DiscordSocketClient(new DiscordSocketConfig 
+            _client = new DiscordSocketClient(new DiscordSocketConfig
             {
-                GatewayIntents = GatewayIntents.Guilds 
-                               | GatewayIntents.GuildMessages 
-                               | GatewayIntents.MessageContent 
+                GatewayIntents = GatewayIntents.Guilds
+                               | GatewayIntents.GuildMessages
+                               | GatewayIntents.MessageContent
                                | GatewayIntents.GuildMembers,
                 LogLevel = LogSeverity.Info
             });
-            
+
             _interactionService = new InteractionService(_client);
             _config = BuildConfiguration();
             _services = BuildServices();
@@ -40,8 +40,8 @@ namespace QuestQuokka
 
         public async Task MainAsync()
         {
-            var token = _config["DiscordBot:Token"] ?? 
-                       Environment.GetEnvironmentVariable("DISCORD_BOT_TOKEN");
+            var token = _config["DiscordBot:Token"] ??
+                        Environment.GetEnvironmentVariable("DISCORD_BOT_TOKEN");
 
             if (string.IsNullOrWhiteSpace(token))
             {
@@ -106,21 +106,17 @@ namespace QuestQuokka
             {
                 Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Bot connected as {_client.CurrentUser}");
 
-                // status rotation (changes every 5 minutes)
-                _statusTimer = new Timer(async _ => 
-                {
-                    await RotateStatusAsync();
-                }, null, TimeSpan.Zero, TimeSpan.FromMinutes(5));
-
-                await _interactionService.RegisterCommandsGloballyAsync(true);
-                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Cleared existing global commands");
+                // Rotate status every 5 minutes
+                _statusTimer = new Timer(async _ => await RotateStatusAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(5));
 
                 await _interactionService.AddModulesAsync(
                     assembly: System.Reflection.Assembly.GetEntryAssembly(),
                     services: _services
                 );
-                await _interactionService.RegisterCommandsGloballyAsync();
-                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Commands registered globally");
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Modules loaded");
+
+                await _interactionService.RegisterCommandsGloballyAsync(true);
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Global commands registered");
             }
             catch (Exception ex)
             {
@@ -143,7 +139,7 @@ namespace QuestQuokka
                 .AddSingleton(_client)
                 .AddSingleton(_interactionService)
                 .AddSingleton(_config)
-                .AddDbContext<DatabaseContext>(options => 
+                .AddDbContext<DatabaseContext>(options =>
                     options.UseSqlite("Data Source=questquokka.db"))
                 .AddSingleton<DatabaseService>()
                 .AddSingleton<TriviaService>()
@@ -163,6 +159,7 @@ namespace QuestQuokka
             catch (Exception ex)
             {
                 Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Error] {ex}");
+
                 if (interaction.Type == InteractionType.ApplicationCommand)
                 {
                     try
