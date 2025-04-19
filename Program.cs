@@ -7,98 +7,225 @@ using Microsoft.Extensions.DependencyInjection;
 using QuestQuokka.Models;
 using QuestQuokka.Services;
 using System;
-using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
-public class Program
+namespace QuestQuokka
 {
-    private DiscordSocketClient _client = null!;
-    private InteractionService _interactionService = null!;
-    private IConfiguration _config = null!;
-    private IServiceProvider _services = null!;
-
-    public static Task Main(string[] args) => new Program().MainAsync();
-
-    public async Task MainAsync()
+    public class Program
     {
-        _client = new DiscordSocketClient(new DiscordSocketConfig 
+        private readonly DiscordSocketClient _client;
+        private readonly InteractionService _interactionService;
+        private readonly IConfiguration _config;
+        private readonly IServiceProvider _services;
+        private Timer _statusTimer;
+
+        public static Task Main(string[] args) => new Program().MainAsync();
+
+        public Program()
         {
-            GatewayIntents = GatewayIntents.Guilds 
-                           | GatewayIntents.GuildMessages 
-                           | GatewayIntents.MessageContent 
-                           | GatewayIntents.GuildMembers,
-            LogLevel = LogSeverity.Debug
-        });
-        
-        _interactionService = new InteractionService(_client);
-        
-        _client.Log += LogAsync;
-        _interactionService.Log += LogAsync;
+            _client = new DiscordSocketClient(new DiscordSocketConfig
+            {
+                GatewayIntents = GatewayIntents.Guilds
+                               | GatewayIntents.GuildMessages
+                               | GatewayIntents.MessageContent
+                               | GatewayIntents.GuildMembers,
+                LogLevel = LogSeverity.Info
+            });
 
-        _config = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json")
-            .Build();
-
-        _services = new ServiceCollection()
-            .AddSingleton(_client)
-            .AddSingleton(_interactionService)
-            .AddSingleton(_config)
-            .AddDbContext<DatabaseContext>(options => 
-                options.UseSqlite("Data Source=questquokka.db"))
-            .AddSingleton<DatabaseService>()
-            .AddSingleton<TriviaService>()
-            .AddSingleton<GameManagementService>()
-            .AddSingleton<TicTacToeService>()
-            .AddSingleton<LeaderboardService>()
-            .BuildServiceProvider();
-
-        using var dbContext = _services.GetRequiredService<DatabaseContext>();
-        await dbContext.Database.MigrateAsync();
-
-        _client.Ready += ClientReady;
-        _client.InteractionCreated += HandleInteraction;
-
-        await _client.LoginAsync(TokenType.Bot, _config["DiscordBot:Token"]);
-        await _client.StartAsync();
-        await Task.Delay(-1);
-    }
-
-    private async Task ClientReady()
-    {
-        Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Bot connected as {_client.CurrentUser}");
-
-        await _interactionService.RegisterCommandsGloballyAsync(true);
-        Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Cleared existing global commands");
-
-        await _interactionService.AddModulesAsync(
-            assembly: System.Reflection.Assembly.GetEntryAssembly(),
-            services: _services
-        );
-        await _interactionService.RegisterCommandsGloballyAsync();
-        Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Commands registered globally");
-    }
-
-    private async Task HandleInteraction(SocketInteraction interaction)
-    {
-        try
-        {
-            var context = new SocketInteractionContext(_client, interaction);
-            await _interactionService.ExecuteCommandAsync(context, _services);
+            _interactionService = new InteractionService(_client.Rest);
+            _config = BuildConfiguration();
+            _services = BuildServices();
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Error] {ex}");
-            if (interaction.Type == InteractionType.ApplicationCommand)
-                await interaction.RespondAsync("❌ An error occurred processing that command", ephemeral: true);
-        }
-    }
 
-    private Task LogAsync(LogMessage log)
-    {
-        Console.WriteLine($"{DateTime.Now:HH:mm:ss} [{log.Severity}] {log.Source}: {log.Message}");
-        if (log.Exception != null)
-            Console.WriteLine(log.Exception);
-        return Task.CompletedTask;
+        public async Task MainAsync()
+        {
+            var token = _config["DiscordBot:Token"] ??
+                       Environment.GetEnvironmentVariable("DISCORD_BOT_TOKEN");
+
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                Console.WriteLine("Error: No bot token found in configuration or environment variables");
+                return;
+            }
+
+            _client.Log += LogAsync;
+            _interactionService.Log += LogAsync;
+
+            using (var scope = _services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+                await dbContext.Database.MigrateAsync();
+            }
+
+            _client.Ready += ClientReady;
+            _client.InteractionCreated += HandleInteraction;
+
+            try
+            {
+                await _client.LoginAsync(TokenType.Bot, token);
+                await _client.StartAsync();
+                await Task.Delay(-1);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Fatal] {ex}");
+            }
+            finally
+            {
+                _statusTimer?.Dispose();
+            }
+        }
+
+        private async Task RotateStatusAsync()
+        {
+            try
+            {
+                var statuses = new[]
+                {
+                    new Game("🎮 /tictactoe", ActivityType.Playing),
+                    new Game("❓ /trivia", ActivityType.Playing),
+                    new Game("🏆 /leaderboard", ActivityType.Watching),
+                    new Game("💰 /daily", ActivityType.Playing),
+                    new Game("@QuestQuokka help", ActivityType.Listening)
+                };
+
+                var randomStatus = statuses[new Random().Next(statuses.Length)];
+                await _client.SetActivityAsync(randomStatus);
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Status] Changed to: {randomStatus.Name}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Status Error] {ex}");
+            }
+        }
+
+        private async Task ClientReady()
+        {
+            try
+            {
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Bot connected as {_client.CurrentUser}");
+
+                _statusTimer = new Timer(async _ => await RotateStatusAsync(), 
+                    null, TimeSpan.Zero, TimeSpan.FromMinutes(5));
+
+                await _interactionService.AddModulesAsync(
+                    assembly: System.Reflection.Assembly.GetEntryAssembly(),
+                    services: _services
+                );
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Modules loaded");
+
+                await RegisterCommandsGloballyAsync();
+                
+                await VerifyCommandsRegistered();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Error] ClientReady: {ex}");
+            }
+        }
+
+        private async Task RegisterCommandsGloballyAsync()
+        {
+            try
+            {
+                await _interactionService.RegisterCommandsGloballyAsync();
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Global commands registered");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Error] Global command registration failed: {ex}");
+                throw;
+            }
+        }
+
+        private async Task VerifyCommandsRegistered()
+        {
+            try
+            {
+                var globalCommands = await _client.GetGlobalApplicationCommandsAsync();
+                Console.WriteLine("Registered Global Commands:");
+                foreach (var cmd in globalCommands)
+                {
+                    Console.WriteLine($"- {cmd.Name} (ID: {cmd.Id})");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Error] Command verification failed: {ex}");
+            }
+        }
+
+        private IConfiguration BuildConfiguration()
+        {
+            return new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: true)
+                .AddEnvironmentVariables()
+                .Build();
+        }
+
+        private IServiceProvider BuildServices()
+        {
+            return new ServiceCollection()
+                .AddSingleton(_client)
+                .AddSingleton(_interactionService)
+                .AddSingleton(_config)
+                .AddDbContext<DatabaseContext>(options =>
+                    options.UseSqlite("Data Source=questquokka.db"))
+                .AddSingleton<DatabaseService>()
+                .AddSingleton<TriviaService>()
+                .AddSingleton<GameManagementService>()
+                .AddSingleton<TicTacToeService>()
+                .AddSingleton<LeaderboardService>()
+                .BuildServiceProvider();
+        }
+
+        private async Task HandleInteraction(SocketInteraction interaction)
+        {
+            try
+            {
+                var context = new SocketInteractionContext(_client, interaction);
+                var result = await _interactionService.ExecuteCommandAsync(context, _services);
+
+                if (!result.IsSuccess)
+                {
+                    Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Warning] Command execution failed: {result.ErrorReason}");
+                    
+                    if (interaction.Type == InteractionType.ApplicationCommand)
+                    {
+                        await interaction.RespondAsync($"❌ Command failed: {result.ErrorReason}", ephemeral: true);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Error] {ex}");
+
+                if (interaction.Type == InteractionType.ApplicationCommand)
+                {
+                    try
+                    {
+                        await interaction.RespondAsync("❌ An error occurred processing that command", ephemeral: true);
+                    }
+                    catch
+                    {
+                        if (interaction is SocketSlashCommand slashCommand)
+                        {
+                            await slashCommand.FollowupAsync("❌ An error occurred processing that command", ephemeral: true);
+                        }
+                    }
+                }
+            }
+        }
+
+        private Task LogAsync(LogMessage log)
+        {
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss} [{log.Severity}] {log.Source}: {log.Message}");
+            if (log.Exception != null)
+                Console.WriteLine(log.Exception);
+            return Task.CompletedTask;
+        }
     }
 }
