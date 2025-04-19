@@ -60,6 +60,7 @@ dotnet add package Microsoft.EntityFrameworkCore.Sqlite
 dotnet add package Microsoft.Extensions.DependencyInjection
 dotnet add package Newtonsoft.Json
 dotnet add package Microsoft.Extensions.Configuration.Json
+dotnet add package Microsoft.Extensions.Configuration.EnvironmentVariables
 ```
 
 ---
