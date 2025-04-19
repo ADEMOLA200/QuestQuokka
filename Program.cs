@@ -106,11 +106,11 @@ namespace QuestQuokka
             {
                 Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Bot connected as {_client.CurrentUser}");
 
-                // status rotation (changes every 1 minute)
+                // status rotation (changes every 5 minutes)
                 _statusTimer = new Timer(async _ => 
                 {
                     await RotateStatusAsync();
-                }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+                }, null, TimeSpan.Zero, TimeSpan.FromMinutes(5));
 
                 await _interactionService.RegisterCommandsGloballyAsync(true);
                 Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Cleared existing global commands");
