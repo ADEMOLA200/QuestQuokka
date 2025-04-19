@@ -76,7 +76,7 @@ namespace QuestQuokka.Services
             var parts = id.Split('_');
             Console.WriteLine($"[DEBUG] Trivia answer button ID: {id} (parts.Length = {parts.Length})");
             
-            if (parts.Length != 4)
+            if (parts.Length != 3)
             {
                 await interaction.FollowupAsync("❌ Invalid question format!", ephemeral: true);
                 return;
@@ -95,7 +95,7 @@ namespace QuestQuokka.Services
             }
 
             var (cts, questionId, options) = questionData;
-            if (parts[1] != questionId)
+            if (parts[0] != questionId)
             {
                 await interaction.FollowupAsync("❌ This answer is for an expired question!", ephemeral: true);
                 return;
@@ -104,8 +104,8 @@ namespace QuestQuokka.Services
             cts.Cancel();
             _activeQuestions.TryRemove(component.Message.Id, out _);
 
-            var selectedIndex = int.Parse(parts[2]);
-            var correctIndex = int.Parse(parts[3]);
+            var selectedIndex = int.Parse(parts[1]);
+            var correctIndex = int.Parse(parts[2]);
             
             if (selectedIndex == correctIndex)
             {
