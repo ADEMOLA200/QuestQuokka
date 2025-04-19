@@ -1,0 +1,3 @@
+[phases.setup]
+nixPkgsArchive = "https://github.com/NixOS/nixpkgs/archive/77c886343b3b31c6c4b3050866bfb54d44fd1c65.tar.gz"
+nixPackages = ["dotnet-sdk_9"]
