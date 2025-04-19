@@ -4,41 +4,48 @@ using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using QuestQuokka.Models;
-using QuestQuokka.Services;
 using System;
-using System.IO;
 using System.Threading.Tasks;
 
 public class Program
 {
-    private DiscordSocketClient _client = null!;
-    private InteractionService _interactionService = null!;
-    private IConfiguration _config = null!;
-    private IServiceProvider _services = null!;
+    private DiscordSocketClient _client;
+    private InteractionService _interactionService;
+    private IConfiguration _config;
+    private IServiceProvider _services;
 
     public static Task Main(string[] args) => new Program().MainAsync();
 
     public async Task MainAsync()
     {
+        _config = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+
+        var token = _config["DiscordBot:Token"] ?? 
+                   Environment.GetEnvironmentVariable("DISCORD_BOT_TOKEN");
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            Console.WriteLine("Error: No bot token found in configuration or environment variables");
+            return;
+        }
+
         _client = new DiscordSocketClient(new DiscordSocketConfig 
         {
             GatewayIntents = GatewayIntents.Guilds 
                            | GatewayIntents.GuildMessages 
                            | GatewayIntents.MessageContent 
                            | GatewayIntents.GuildMembers,
-            LogLevel = LogSeverity.Debug
+            LogLevel = LogSeverity.Info
         });
         
         _interactionService = new InteractionService(_client);
         
         _client.Log += LogAsync;
         _interactionService.Log += LogAsync;
-
-        _config = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json")
-            .Build();
 
         _services = new ServiceCollection()
             .AddSingleton(_client)
@@ -59,24 +66,38 @@ public class Program
         _client.Ready += ClientReady;
         _client.InteractionCreated += HandleInteraction;
 
-        await _client.LoginAsync(TokenType.Bot, _config["DiscordBot:Token"]);
-        await _client.StartAsync();
-        await Task.Delay(-1);
+        try
+        {
+            await _client.LoginAsync(TokenType.Bot, token);
+            await _client.StartAsync();
+            await Task.Delay(-1);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Fatal] {ex}");
+        }
     }
 
     private async Task ClientReady()
     {
-        Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Bot connected as {_client.CurrentUser}");
+        try
+        {
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Bot connected as {_client.CurrentUser}");
 
-        await _interactionService.RegisterCommandsGloballyAsync(true);
-        Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Cleared existing global commands");
+            await _interactionService.RegisterCommandsGloballyAsync(true);
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Cleared existing global commands");
 
-        await _interactionService.AddModulesAsync(
-            assembly: System.Reflection.Assembly.GetEntryAssembly(),
-            services: _services
-        );
-        await _interactionService.RegisterCommandsGloballyAsync();
-        Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Commands registered globally");
+            await _interactionService.AddModulesAsync(
+                assembly: System.Reflection.Assembly.GetEntryAssembly(),
+                services: _services
+            );
+            await _interactionService.RegisterCommandsGloballyAsync();
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Info] Commands registered globally");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Error] ClientReady: {ex}");
+        }
     }
 
     private async Task HandleInteraction(SocketInteraction interaction)
@@ -90,7 +111,19 @@ public class Program
         {
             Console.WriteLine($"{DateTime.Now:HH:mm:ss} [Error] {ex}");
             if (interaction.Type == InteractionType.ApplicationCommand)
-                await interaction.RespondAsync("❌ An error occurred processing that command", ephemeral: true);
+            {
+                try
+                {
+                    await interaction.RespondAsync("❌ An error occurred processing that command", ephemeral: true);
+                }
+                catch
+                {
+                    if (interaction is SocketSlashCommand slashCommand)
+                    {
+                        await slashCommand.FollowupAsync("❌ An error occurred processing that command", ephemeral: true);
+                    }
+                }
+            }
         }
     }
 
