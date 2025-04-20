@@ -16,26 +16,6 @@ namespace QuestQuokka.Services
             _gameManager = gameManager;
         }
 
-        [SlashCommand("tictactoe", "Start a new Tic Tac Toe game")]
-        public async Task TicTacToeCommand(SocketUser opponent)
-        {
-            if (opponent.IsBot || opponent == Context.User)
-            {
-                await RespondAsync("Invalid opponent!", ephemeral: true);
-                return;
-            }
-
-            if (_gameManager.HasActiveGame(Context.Channel.Id))
-            {
-                await RespondAsync("A game is already active in this channel!", ephemeral: true);
-                return;
-            }
-
-            var game = new TicTacToeGame(Context.User, opponent, Context);
-            _gameManager.AddTicTacToeGame(Context.Channel.Id, game);
-            await game.StartGame();
-        }
-
         [ComponentInteraction("ttt_*")]
         public async Task HandleButtonClick(string id)
         {
