@@ -16,7 +16,7 @@ namespace QuestQuokka.Services
             _triviaService = triviaService;
         }
 
-        [SlashCommand("canclegame", "Cancel the active game in this channel (Server Owner Only)")]
+        [SlashCommand("cancelgame", "Cancel the active game in this channel (Server Owner Only)")]
         public async Task CancelGameCommand()
         {
             await _gameManager.CancelGameAsync(Context);
@@ -44,6 +44,26 @@ namespace QuestQuokka.Services
         public async Task HandleTriviaAnswer(string id)
         {
             await _triviaService.HandleTriviaAnswer(Context.Interaction, id);
+        }
+
+        [SlashCommand("tictactoe", "Start a new Tic Tac Toe game")]
+        public async Task TicTacToeCommand(SocketUser opponent)
+        {
+            if (opponent.IsBot || opponent == Context.User)
+            {
+                await RespondAsync("Invalid opponent!", ephemeral: true);
+                return;
+            }
+
+            if (_gameManager.HasActiveGame(Context.Channel.Id))
+            {
+                await RespondAsync("A game is already active in this channel!", ephemeral: true);
+                return;
+            }
+
+            var game = new TicTacToeService.TicTacToeGame(Context.User, opponent, Context);
+            _gameManager.AddTicTacToeGame(Context.Channel.Id, game);
+            await game.StartGame();
         }
     }
 }
